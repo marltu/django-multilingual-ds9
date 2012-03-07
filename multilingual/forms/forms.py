@@ -37,17 +37,21 @@ class MultilingualModelFormMetaclass(ModelFormMetaclass):
             # If a model is defined, extract form fields from it.
             fields = fields_for_model(opts.model, opts.fields,
                                       opts.exclude, opts.widgets, formfield_callback)
+            found_fields = [k for k, v in fields.items() if v is not None]
 
             #HACK: This is update of original method. I should be able to change it to overrides
             translation_model = getattr(opts.model._meta, 'translation_model', None)
             if translation_model:
                 if opts.exclude is None:
-                    exclude = ('id', 'language_code', 'master')
+                    exclude = ['id', 'language_code', 'master'] + found_fields
                 else:
-                    exclude = list(opts.exclude) + ['id', 'language_code', 'master']
-                fields.update(fields_for_model(
+                    exclude = list(opts.exclude) + ['id', 'language_code', 'master'] + found_fields
+
+                translated_fields = fields_for_model(
                     translation_model, opts.fields, exclude, opts.widgets, formfield_callback
-                ))
+                )
+
+                fields.update(translated_fields)
 
             # Override default model fields with any custom declared ones
             # (plus, include all the other declared fields).
